@@ -1,0 +1,233 @@
+#pragma once
+
+#include "RePiHelpers.h"
+
+#include "geMatrix4.h"
+#include "geVector2.h"
+#include "geVector3.h"
+#include "geVector4.h"
+#include "geQuaternion.h"
+#include "geMath.h"
+
+#if defined(D3D11)
+#include <d3d11.h>
+#include <d3dcompiler.h>
+#include <d3d11shader.h> 
+#elif defined(VK)
+#include <vulkan\vulkan.h>
+#include <vulkan\vulkan_win32.h>
+#include "spirv_reflect.h"
+#endif
+
+#include "assimp/Importer.hpp"
+#include "assimp/postprocess.h"
+#include "assimp/scene.h"
+
+#include <memory>
+#include <map>
+#include <string>
+#include <vector>
+#include <functional>
+#include <utility>
+
+enum RePiVertexTopology
+{
+    eUNDEFINED = 0,
+    ePOINTLIST = 1,
+    eLINELIST = 2,
+    eLINESTRIP = 3,
+    eTRIANGLELIST = 4,
+    eTRIANGLESTRIP = 5
+};
+
+enum RePiTextureFormat
+{
+    eUNKNOWN = 0,
+    eR8G8B8A8_UNORM,
+    eR32_TYPELESS,
+    eD32_FLOAT,
+    eR32_FLOAT,
+    eR24G8_TYPELESS,
+    eD24_UNORM_S8_UINT,
+    eR24_UNORM_X8_TYPELESS,
+    eB8G8R8A8_UNORM,
+    eR32G32B32A32_FLOAT,
+    eR16G16B16A16_FLOAT,
+};
+
+enum RePiFillMode
+{
+    eWIREFRAME = 2,
+    eSOLID = 3
+};
+
+enum RePiCullMode
+{
+    eNONE = 1,
+    eFRONT = 2,
+    eBACK = 3
+};
+
+enum RePiDepthWriteMask
+{
+    eWRITE_MASK_ZERO = 0,
+    eWRITE_MASK_ALL = 1
+};
+
+enum RePiComparisonFunction
+{
+    eNEVER = 1,
+    eLESS = 2,
+    eEQUAL = 3,
+    eLESS_EQUAL = 4,
+    eGREATER = 5,
+    eNOT_EQUAL = 6,
+    eGREATER_EQUAL = 7,
+    eALWAYS = 8
+};
+
+enum RePiSampleFilter
+{
+    eFILTER_POINT = 0,
+    eFILTER_LINEAR
+};
+
+enum RePiTextureAdressMode
+{
+    eWRAP = 1,
+    eMIRROR = 2,
+    eCLAMP = 3,
+    eBORDER = 4,
+    eMIRROR_ONCE = 5
+};
+
+enum RePiBindFlags
+{
+    eVERTEX_BUFFER = 0x1L,
+    eINDEX_BUFFER = 0x2L,
+    eCONSTANT_BUFFER = 0x4L,
+    eSHADER_RESOURCE = 0x8L,
+    eSTREAM_OUTPUT = 0x10L,
+    eRENDER_TARGET = 0x20L,
+    eDEPTH_STENCIL = 0x40L,
+    eUNORDERED_ACCESS = 0x80L,
+    eDECODER = 0x200L,
+    eVIDEO_ENCODER = 0x400L,
+#if defined(VK)
+    eTRANSFER_SRC_BIT = 0x800L,
+#endif
+};
+
+enum RePiUsage
+{
+    eUSAGE_DEFAULT = 0,
+    eUSAGE_IMMUTABLE = 1,
+    eUSAGE_DYNAMIC = 2,
+    eUSAGE_STAGING = 3
+};
+
+enum RePiCPUAccess
+{
+    eCPU_ACCESS_WRITE = 0x10000L,
+    eCPU_ACCESS_READ = 0x20000L
+};
+
+enum RepiTriangleOrientation
+{
+    eCCW = 0,
+    eCW,
+    eC
+};
+
+typedef geEngineSDK::Quaternion RePiQuaternion;
+typedef geEngineSDK::Rotator RePiRotator;
+typedef geEngineSDK::LinearColor RePiLinearColor;
+typedef geEngineSDK::Vector4 RePiFloat4;
+typedef geEngineSDK::Vector3 RePiFloat3;
+typedef geEngineSDK::Vector2 RePiFloat2;
+typedef geEngineSDK::Vector2I RePiInt2;
+typedef geEngineSDK::Matrix4 RePiMatrix;
+typedef geEngineSDK::ScaleMatrix RePiScaleMatrix;
+typedef geEngineSDK::RotationMatrix RePiRotationMatrix;
+typedef geEngineSDK::TranslationMatrix RePiTranslationMatrix;
+typedef geEngineSDK::LookAtMatrix RePiLookAtMatrix;
+typedef geEngineSDK::OrthoMatrix RePiOrthoMatrix;
+typedef geEngineSDK::PerspectiveMatrix RePiPerspectiveMatrix;
+typedef geEngineSDK::Math RePiMath;
+typedef geEngineSDK::Color RePiColor;
+
+#if defined(VK)
+inline std::string VkResultToString(VkResult Result)
+{
+    switch (Result)
+    {
+    case VK_SUCCESS: return "VK_SUCCESS";
+    case VK_NOT_READY: return "VK_NOT_READY";
+    case VK_TIMEOUT: return "VK_TIMEOUT";
+    case VK_EVENT_SET: return "VK_EVENT_SET";
+    case VK_EVENT_RESET: return "VK_EVENT_RESET";
+    case VK_INCOMPLETE: return "VK_INCOMPLETE";
+    case VK_ERROR_OUT_OF_HOST_MEMORY: return "VK_ERROR_OUT_OF_HOST_MEMORY";
+    case VK_ERROR_OUT_OF_DEVICE_MEMORY: return "VK_ERROR_OUT_OF_DEVICE_MEMORY";
+    case VK_ERROR_INITIALIZATION_FAILED: return "VK_ERROR_INITIALIZATION_FAILED";
+    case VK_ERROR_DEVICE_LOST: return "VK_ERROR_DEVICE_LOST";
+    case VK_ERROR_MEMORY_MAP_FAILED: return "VK_ERROR_MEMORY_MAP_FAILED";
+    case VK_ERROR_LAYER_NOT_PRESENT: return "VK_ERROR_LAYER_NOT_PRESENT";
+    case VK_ERROR_EXTENSION_NOT_PRESENT: return "VK_ERROR_EXTENSION_NOT_PRESENT";
+    case VK_ERROR_FEATURE_NOT_PRESENT: return "VK_ERROR_FEATURE_NOT_PRESENT";
+    case VK_ERROR_INCOMPATIBLE_DRIVER: return "VK_ERROR_INCOMPATIBLE_DRIVER";
+    case VK_ERROR_TOO_MANY_OBJECTS: return "VK_ERROR_TOO_MANY_OBJECTS";
+    case VK_ERROR_FORMAT_NOT_SUPPORTED: return "VK_ERROR_FORMAT_NOT_SUPPORTED";
+    case VK_ERROR_FRAGMENTED_POOL: return "VK_ERROR_FRAGMENTED_POOL";
+    case VK_ERROR_UNKNOWN: return "VK_ERROR_UNKNOWN";
+    case VK_ERROR_OUT_OF_POOL_MEMORY: return "VK_ERROR_OUT_OF_POOL_MEMORY";
+    case VK_ERROR_INVALID_EXTERNAL_HANDLE: return "VK_ERROR_INVALID_EXTERNAL_HANDLE";
+    case VK_ERROR_FRAGMENTATION: return "VK_ERROR_FRAGMENTATION";
+    case VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS: return "VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS";
+    case VK_PIPELINE_COMPILE_REQUIRED: return "VK_PIPELINE_COMPILE_REQUIRED";
+    case VK_ERROR_SURFACE_LOST_KHR: return "VK_ERROR_SURFACE_LOST_KHR";
+    case VK_ERROR_NATIVE_WINDOW_IN_USE_KHR: return "VK_ERROR_NATIVE_WINDOW_IN_USE_KHR";
+    case VK_SUBOPTIMAL_KHR: return "VK_SUBOPTIMAL_KHR";
+    case VK_ERROR_OUT_OF_DATE_KHR: return "VK_ERROR_OUT_OF_DATE_KHR";
+    case VK_ERROR_INCOMPATIBLE_DISPLAY_KHR: return "VK_ERROR_INCOMPATIBLE_DISPLAY_KHR";
+    case VK_ERROR_VALIDATION_FAILED_EXT: return "VK_ERROR_VALIDATION_FAILED_EXT";
+    case VK_ERROR_INVALID_SHADER_NV: return "VK_ERROR_INVALID_SHADER_NV";
+    case VK_ERROR_INVALID_DRM_FORMAT_MODIFIER_PLANE_LAYOUT_EXT: return "VK_ERROR_INVALID_DRM_FORMAT_MODIFIER_PLANE_LAYOUT_EXT";
+    case VK_ERROR_NOT_PERMITTED_EXT: return "VK_ERROR_NOT_PERMITTED_EXT";
+    case VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT: return "VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT";
+    default: return "UNKNOWN_ERROR";
+    }
+}
+
+inline std::string SpvReflectResultToString(SpvReflectResult Result)
+{
+    switch (Result)
+    {
+    case SPV_REFLECT_RESULT_SUCCESS: return "SPV_REFLECT_RESULT_SUCCESS";
+    case SPV_REFLECT_RESULT_NOT_READY: return "SPV_REFLECT_RESULT_NOT_READY";
+    case SPV_REFLECT_RESULT_ERROR_PARSE_FAILED: return "SPV_REFLECT_RESULT_ERROR_PARSE_FAILED";
+    case SPV_REFLECT_RESULT_ERROR_ALLOC_FAILED: return "SPV_REFLECT_RESULT_ERROR_ALLOC_FAILED";
+    case SPV_REFLECT_RESULT_ERROR_RANGE_EXCEEDED: return "SPV_REFLECT_RESULT_ERROR_RANGE_EXCEEDED";
+    case SPV_REFLECT_RESULT_ERROR_NULL_POINTER: return "SPV_REFLECT_RESULT_ERROR_NULL_POINTER";
+    case SPV_REFLECT_RESULT_ERROR_INTERNAL_ERROR: return "SPV_REFLECT_RESULT_ERROR_INTERNAL_ERROR";
+    case SPV_REFLECT_RESULT_ERROR_COUNT_MISMATCH: return "SPV_REFLECT_RESULT_ERROR_COUNT_MISMATCH";
+    case SPV_REFLECT_RESULT_ERROR_ELEMENT_NOT_FOUND: return "SPV_REFLECT_RESULT_ERROR_ELEMENT_NOT_FOUND";
+    case SPV_REFLECT_RESULT_ERROR_SPIRV_INVALID_CODE_SIZE: return "SPV_REFLECT_RESULT_ERROR_SPIRV_INVALID_CODE_SIZE";
+    case SPV_REFLECT_RESULT_ERROR_SPIRV_INVALID_MAGIC_NUMBER: return "SPV_REFLECT_RESULT_ERROR_SPIRV_INVALID_MAGIC_NUMBER";
+    case SPV_REFLECT_RESULT_ERROR_SPIRV_UNEXPECTED_EOF: return "SPV_REFLECT_RESULT_ERROR_SPIRV_UNEXPECTED_EOF";
+    case SPV_REFLECT_RESULT_ERROR_SPIRV_INVALID_ID_REFERENCE: return "SPV_REFLECT_RESULT_ERROR_SPIRV_INVALID_ID_REFERENCE";
+    case SPV_REFLECT_RESULT_ERROR_SPIRV_SET_NUMBER_OVERFLOW: return "SPV_REFLECT_RESULT_ERROR_SPIRV_SET_NUMBER_OVERFLOW";
+    case SPV_REFLECT_RESULT_ERROR_SPIRV_INVALID_STORAGE_CLASS: return "SPV_REFLECT_RESULT_ERROR_SPIRV_INVALID_STORAGE_CLASS";
+    case SPV_REFLECT_RESULT_ERROR_SPIRV_RECURSION: return "SPV_REFLECT_RESULT_ERROR_SPIRV_RECURSION";
+    case SPV_REFLECT_RESULT_ERROR_SPIRV_INVALID_INSTRUCTION: return "SPV_REFLECT_RESULT_ERROR_SPIRV_INVALID_INSTRUCTION";
+    case SPV_REFLECT_RESULT_ERROR_SPIRV_UNEXPECTED_BLOCK_DATA: return "SPV_REFLECT_RESULT_ERROR_SPIRV_UNEXPECTED_BLOCK_DATA";
+    case SPV_REFLECT_RESULT_ERROR_SPIRV_INVALID_BLOCK_MEMBER_REFERENCE: return "SPV_REFLECT_RESULT_ERROR_SPIRV_INVALID_BLOCK_MEMBER_REFERENCE";
+    case SPV_REFLECT_RESULT_ERROR_SPIRV_INVALID_ENTRY_POINT: return "SPV_REFLECT_RESULT_ERROR_SPIRV_INVALID_ENTRY_POINT";
+    case SPV_REFLECT_RESULT_ERROR_SPIRV_INVALID_EXECUTION_MODE: return "SPV_REFLECT_RESULT_ERROR_SPIRV_INVALID_EXECUTION_MODE";
+    case SPV_REFLECT_RESULT_ERROR_SPIRV_MAX_RECURSIVE_EXCEEDED: return "SPV_REFLECT_RESULT_ERROR_SPIRV_MAX_RECURSIVE_EXCEEDED";
+    default: return "UNKNOWN_ERROR";
+    }
+}
+#endif
+
+static const uint32_t MaxBoneCapacity = 120;
